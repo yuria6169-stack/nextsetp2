@@ -1,0 +1,25 @@
+{
+  "name": "下一组 · 训练节拍器",
+  "short_name": "下一组",
+  "description": "像素训练冒险，用系统计时提醒控制组间休息",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#17242c",
+  "theme_color": "#69c5f2",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
