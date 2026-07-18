@@ -522,7 +522,7 @@ document.addEventListener("visibilitychange", () => {
 });
 
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("service-worker.js").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("service-worker.js?v=9").catch(() => {}));
 }
 
 if (state.workout && state.workout.status !== "complete") {

@@ -1,4 +1,4 @@
-const CACHE = "next-set-pixel-v8";
+const CACHE = "next-set-pixel-v9";
 const FILES = ["./", "index.html", "styles-pixel.css", "app.js", "manifest.webmanifest", "icon.svg", "icon-512.png", "ranger-rest-sprite.png", "ranger-ready-sprite.png"];
 
 self.addEventListener("install", event => {
@@ -16,10 +16,10 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
   event.respondWith(
-    caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
+    fetch(event.request).then(response => {
       const copy = response.clone();
       caches.open(CACHE).then(cache => cache.put(event.request, copy));
       return response;
-    }).catch(() => caches.match("index.html")))
+    }).catch(() => caches.match(event.request).then(cached => cached || caches.match("index.html")))
   );
 });

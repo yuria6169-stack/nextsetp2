@@ -728,7 +728,7 @@ h2 { font-size: 19px; letter-spacing: -.025em; text-shadow: 2px 2px 0 #17242c; }
   bottom: 11px;
   width: 128px;
   height: 145px;
-  background-image: url("ranger-rest-sprite.png");
+  background-image: url("ranger-rest-sprite.png?v=9");
   background-repeat: no-repeat;
   background-size: 400% 100%;
   background-position: 0 0;
@@ -740,11 +740,11 @@ h2 { font-size: 19px; letter-spacing: -.025em; text-shadow: 2px 2px 0 #17242c; }
   bottom: 6px;
   width: 128px;
   height: 170px;
-  background-image: url("ranger-ready-sprite.png");
+  background-image: url("ranger-ready-sprite.png?v=9");
   animation: ranger-ready-cycle 2.6s steps(1, end) infinite;
 }
 .ranger-stage.hurry .ranger-sprite {
-  background-image: url("ranger-ready-sprite.png");
+  background-image: url("ranger-ready-sprite.png?v=9");
   background-position: 100% 0;
   animation: ranger-alert-bounce .58s steps(2, end) infinite;
 }
