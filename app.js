@@ -261,6 +261,7 @@ function renderRest() {
   if (!workout?.restEndsAt) return renderWorkout();
   const remaining = Math.ceil((workout.restEndsAt - Date.now()) / 1000);
   const over = remaining < 0;
+  const preparing = remaining >= 0 && remaining <= 10;
   const elapsed = Math.max(0, workout.restDuration - Math.max(0, remaining));
   const pct = clamp((elapsed / workout.restDuration) * 100, 0, 100);
   const next = nextSetLabel();
@@ -271,19 +272,11 @@ function renderRest() {
         <div class="timer-value" id="timer-value">${over ? `+${formatTime(-remaining)}` : formatTime(remaining)}</div>
         <div class="timer-note" id="timer-note">${over ? "营火熄灭，继续冒险！" : "计时精灵守护中"}</div>
       </div>
-      <div class="rest-animation ${over ? "hurry" : ""}" aria-hidden="true">
-        <div class="rest-buddy">
-          <span class="buddy-weight"></span>
-          <span class="buddy-head"></span>
-          <span class="buddy-body"></span>
-          <span class="buddy-arm buddy-arm-left"></span>
-          <span class="buddy-arm buddy-arm-right"></span>
-          <span class="buddy-leg buddy-leg-left"></span>
-          <span class="buddy-leg buddy-leg-right"></span>
-        </div>
-        <div class="mini-fire"></div>
-        <span class="fire-spark spark-one"></span>
-        <span class="fire-spark spark-two"></span>
+      <div class="ranger-stage ${preparing ? "ready" : ""} ${over ? "hurry" : ""}" aria-hidden="true">
+        <div class="ranger-sprite"></div>
+        <div class="ranger-campfire"></div>
+        <span class="ranger-spark ranger-spark-one"></span>
+        <span class="ranger-spark ranger-spark-two"></span>
       </div>
       <p class="next-copy">下一组：<strong>${escapeHtml(next)}</strong></p>
       <div class="inline-actions">
@@ -381,10 +374,11 @@ function startTicker() {
       value.textContent = `+${formatTime(-remaining)}`;
       note.textContent = "营火熄灭，继续冒险！";
       ring.classList.add("over");
-      document.querySelector(".rest-animation")?.classList.add("hurry");
+      document.querySelector(".ranger-stage")?.classList.add("hurry");
       ring.style.setProperty("--progress", "100%");
     } else {
       value.textContent = formatTime(remaining);
+      if (remaining <= 10) document.querySelector(".ranger-stage")?.classList.add("ready");
       const elapsed = state.workout.restDuration - remaining;
       ring.style.setProperty("--progress", `${clamp((elapsed / state.workout.restDuration) * 100, 0, 100)}%`);
     }
