@@ -1,8 +1,8 @@
-const CACHE = "next-set-pixel-v4";
+const CACHE = "next-set-pixel-v7";
 const FILES = ["./", "index.html", "styles-pixel.css", "app.js", "manifest.webmanifest", "icon.svg", "icon-512.png"];
 
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)));
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES.map(url => new Request(url, { cache: "reload" })))));
   self.skipWaiting();
 });
 

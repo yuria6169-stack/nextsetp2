@@ -2,12 +2,15 @@
 
 const STORAGE = {
   plan: "nextSet.plan.v1",
+  plans: "nextSet.plans.v2",
+  selectedPlan: "nextSet.selectedPlan.v2",
   workout: "nextSet.workout.v1",
   settings: "nextSet.settings.v1",
   history: "nextSet.history.v1"
 };
 
 const DEFAULT_PLAN = {
+  id: cryptoId(),
   name: "力量训练 A",
   exercises: [
     { id: cryptoId(), name: "杠铃深蹲", sets: 4, reps: "8", weight: "60", rest: 120 },
@@ -16,10 +19,17 @@ const DEFAULT_PLAN = {
   ]
 };
 
+const initialPlans = loadPlans();
+const restoredWorkout = load(STORAGE.workout, null);
+const requestedPlanId = restoredWorkout?.planId || load(STORAGE.selectedPlan, initialPlans[0].id);
+const initialPlan = initialPlans.find(plan => plan.id === requestedPlanId) || initialPlans[0];
+
 const state = {
   screen: "home",
-  plan: load(STORAGE.plan, DEFAULT_PLAN),
-  workout: load(STORAGE.workout, null),
+  plans: initialPlans,
+  selectedPlanId: initialPlan.id,
+  plan: initialPlan,
+  workout: restoredWorkout,
   settings: load(STORAGE.settings, { shortcutName: "组间提醒", shortcutReady: false }),
   history: load(STORAGE.history, []),
   ticker: null
@@ -37,6 +47,45 @@ function load(key, fallback) {
   } catch { return clone(fallback); }
 }
 function save(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+function normalizePlan(plan) {
+  const source = plan && typeof plan === "object" ? plan : DEFAULT_PLAN;
+  return {
+    id: source.id || cryptoId(),
+    name: String(source.name || "我的训练"),
+    exercises: Array.isArray(source.exercises) ? source.exercises.map(item => ({
+      id: item.id || cryptoId(),
+      name: String(item.name || "未命名动作"),
+      sets: clamp(Number(item.sets) || 1, 1, 20),
+      reps: String(item.reps ?? "10"),
+      weight: String(item.weight ?? ""),
+      rest: clamp(Number(item.rest) || 60, 10, 900)
+    })) : []
+  };
+}
+function loadPlans() {
+  const stored = load(STORAGE.plans, null);
+  if (Array.isArray(stored) && stored.length) return stored.map(normalizePlan);
+  const legacy = load(STORAGE.plan, null);
+  return [normalizePlan(legacy || DEFAULT_PLAN)];
+}
+function persistPlans() {
+  save(STORAGE.plans, state.plans);
+  save(STORAGE.selectedPlan, state.selectedPlanId);
+  save(STORAGE.plan, state.plan);
+}
+function setSelectedPlan(plan) {
+  state.selectedPlanId = plan.id;
+  state.plan = plan;
+  persistPlans();
+}
+function replaceSelectedPlan(plan) {
+  const index = state.plans.findIndex(item => item.id === state.selectedPlanId);
+  const normalized = normalizePlan({ ...plan, id: state.selectedPlanId });
+  if (index >= 0) state.plans[index] = normalized;
+  else state.plans.push(normalized);
+  state.plan = normalized;
+}
+function hasActiveWorkout() { return Boolean(state.workout && state.workout.status !== "complete"); }
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]);
 }
@@ -79,9 +128,17 @@ function render() {
 }
 
 function renderHome() {
-  const active = state.workout && state.workout.status !== "complete";
+  const active = hasActiveWorkout();
   return `<main class="shell">
-    ${headerMarkup("今天，刷点肌肉经验", "NEXT SET · 像素训练冒险", `<button class="icon-btn" data-action="edit-plan" aria-label="编辑计划">✎</button>`)}
+    ${headerMarkup("今天练哪个？", "NEXT SET · 选择你的冒险", `<button class="icon-btn" data-action="new-plan" aria-label="新建计划">＋</button>`)}
+    <section class="plan-picker" aria-label="训练计划列表">
+      ${state.plans.map((plan, index) => `<button class="plan-choice ${plan.id === state.selectedPlanId ? "selected" : ""}" data-action="select-plan" data-plan-id="${plan.id}">
+        <span class="plan-gem">${index + 1}</span>
+        <span class="plan-choice-copy"><strong>${escapeHtml(plan.name)}</strong><small>${plan.exercises.length} 个动作</small></span>
+        <span class="plan-check">${plan.id === state.selectedPlanId ? "◆" : "◇"}</span>
+      </button>`).join("")}
+    </section>
+    <div class="plan-toolbar"><span>${active ? "冒险进行中 · 当前计划已锁定" : `已保存 ${state.plans.length} 个训练计划`}</span><button data-action="edit-plan">编辑当前计划</button></div>
     <section class="hero">
       <div class="pixel-sun" aria-hidden="true"></div>
       <div class="pixel-cloud cloud-one" aria-hidden="true"></div>
@@ -113,7 +170,7 @@ function renderHome() {
 
 function renderEdit() {
   return `<main class="shell">
-    ${headerMarkup("编辑冒险任务", "营地自动保存", `<button class="text-btn accent" data-action="save-plan">完成</button>`)}
+    ${headerMarkup("编辑训练存档", `第 ${state.plans.findIndex(item => item.id === state.selectedPlanId) + 1}/${state.plans.length} 个计划`, `<button class="text-btn accent" data-action="save-plan">完成</button>`)}
     <div class="form-grid">
       <div class="field"><label for="plan-name">计划名称</label><input id="plan-name" data-plan-name value="${escapeHtml(state.plan.name)}" maxlength="30"></div>
       <div class="section-head"><h2>动作</h2><span class="muted small">${state.plan.exercises.length} 项</span></div>
@@ -122,6 +179,7 @@ function renderEdit() {
       </div>
       <button class="add-btn" data-action="add-exercise">＋ 添加动作</button>
       <div class="spacer"></div>
+      ${state.plans.length > 1 ? `<button class="danger-btn" data-action="delete-plan">删除这个训练计划</button><div class="spacer"></div>` : ""}
       <button class="secondary" data-action="cancel-edit">取消</button>
     </div>
   </main>`;
@@ -156,13 +214,14 @@ function renderSetup() {
       <div class="step">打开 iPhone 自带的 <strong>“快捷指令”</strong> App，点击右上角“＋”。</div>
       <div class="step">把快捷指令命名为 <strong>“${name}”</strong>。</div>
       <div class="step">添加操作 <strong>“从输入中获取数字”</strong>，再添加 <strong>“开始计时”</strong>，让计时时长使用刚才的数字，单位选择“秒”。</div>
+      <div class="step">在最后搜索并添加 <strong>“打开 App”</strong>。如果 App 列表能找到“下一组”，就选中它；找不到则跳过这一步。</div>
       <div class="step">保存后返回这里，点击下方按钮测试 10 秒计时。</div>
     </section>
     <div class="spacer"></div>
     <button class="primary" data-action="test-shortcut">测试 10 秒系统计时器</button>
     <div class="spacer"></div>
     <button class="secondary" data-action="mark-shortcut-ready">${state.settings.shortcutReady ? "重新确认已设置" : "我已设置完成"}</button>
-    <p class="muted small" style="margin-top:14px;line-height:1.6">说明：提醒交给系统“时钟”计时器。启动时会短暂打开快捷指令，完成后会尝试自动返回这里。</p>
+    <p class="muted small" style="margin-top:14px;line-height:1.6">说明：新版不再回跳 Safari。如果“打开 App”里能选到“下一组”，快捷指令会直接回到主屏幕 App；如果选不到，计时器仍会正常启动，但需要从 App 切换器手动回来。</p>
     ${nav("setup")}
   </main>`;
 }
@@ -212,6 +271,20 @@ function renderRest() {
         <div class="timer-value" id="timer-value">${over ? `+${formatTime(-remaining)}` : formatTime(remaining)}</div>
         <div class="timer-note" id="timer-note">${over ? "营火熄灭，继续冒险！" : "计时精灵守护中"}</div>
       </div>
+      <div class="rest-animation ${over ? "hurry" : ""}" aria-hidden="true">
+        <div class="rest-buddy">
+          <span class="buddy-weight"></span>
+          <span class="buddy-head"></span>
+          <span class="buddy-body"></span>
+          <span class="buddy-arm buddy-arm-left"></span>
+          <span class="buddy-arm buddy-arm-right"></span>
+          <span class="buddy-leg buddy-leg-left"></span>
+          <span class="buddy-leg buddy-leg-right"></span>
+        </div>
+        <div class="mini-fire"></div>
+        <span class="fire-spark spark-one"></span>
+        <span class="fire-spark spark-two"></span>
+      </div>
       <p class="next-copy">下一组：<strong>${escapeHtml(next)}</strong></p>
       <div class="inline-actions">
         <button class="secondary" data-action="add-rest">＋30 秒</button>
@@ -246,7 +319,7 @@ function startWorkout() {
     toast("请先完成后台提醒设置");
     return;
   }
-  state.workout = { status: "active", exerciseIndex: 0, setIndex: 0, completedSets: 0, completedExercises: 0, startedAt: Date.now(), restEndsAt: null, restDuration: 0 };
+  state.workout = { status: "active", planId: state.plan.id, planName: state.plan.name, exerciseIndex: 0, setIndex: 0, completedSets: 0, completedExercises: 0, startedAt: Date.now(), restEndsAt: null, restDuration: 0 };
   save(STORAGE.workout, state.workout);
   state.screen = "workout";
   render();
@@ -292,9 +365,7 @@ function nextSetLabel() {
 
 function launchShortcut(seconds) {
   const shortcut = encodeURIComponent(state.settings.shortcutName || "组间提醒");
-  const callback = new URL("./?fromShortcut=1", window.location.href).toString();
-  const encodedCallback = encodeURIComponent(callback);
-  const url = `shortcuts://x-callback-url/run-shortcut?name=${shortcut}&input=text&text=${encodeURIComponent(String(seconds))}&x-success=${encodedCallback}&x-cancel=${encodedCallback}&x-error=${encodedCallback}`;
+  const url = `shortcuts://run-shortcut?name=${shortcut}&input=text&text=${encodeURIComponent(String(seconds))}`;
   setTimeout(() => { window.location.href = url; }, 120);
 }
 
@@ -310,6 +381,7 @@ function startTicker() {
       value.textContent = `+${formatTime(-remaining)}`;
       note.textContent = "营火熄灭，继续冒险！";
       ring.classList.add("over");
+      document.querySelector(".rest-animation")?.classList.add("hurry");
       ring.style.setProperty("--progress", "100%");
     } else {
       value.textContent = formatTime(remaining);
@@ -349,8 +421,40 @@ document.addEventListener("click", event => {
   const action = button.dataset.action;
   if (action === "go-home") { state.screen = "home"; render(); }
   if (action === "go-setup") { state.screen = "setup"; render(); }
-  if (action === "edit-plan") { state.editBackup = clone(state.plan); state.screen = "edit"; render(); }
-  if (action === "cancel-edit") { state.plan = state.editBackup || state.plan; state.screen = "home"; render(); }
+  if (action === "select-plan") {
+    if (hasActiveWorkout() && button.dataset.planId !== state.selectedPlanId) return toast("请先结束当前训练，再切换计划");
+    const plan = state.plans.find(item => item.id === button.dataset.planId);
+    if (plan) {
+      setSelectedPlan(plan);
+      render();
+      toast(`今天练：${plan.name}`);
+    }
+  }
+  if (action === "new-plan") {
+    if (hasActiveWorkout()) return toast("请先结束当前训练，再新建计划");
+    const plan = normalizePlan({
+      id: cryptoId(),
+      name: `训练计划 ${state.plans.length + 1}`,
+      exercises: [{ id: cryptoId(), name: "新动作", sets: 3, reps: "10", weight: "", rest: 90 }]
+    });
+    state.plans.push(plan);
+    setSelectedPlan(plan);
+    state.editBackup = clone(plan);
+    state.screen = "edit";
+    render();
+  }
+  if (action === "edit-plan") {
+    if (hasActiveWorkout()) return toast("训练进行中，当前计划已锁定");
+    state.editBackup = clone(state.plan);
+    state.screen = "edit";
+    render();
+  }
+  if (action === "cancel-edit") {
+    if (state.editBackup) replaceSelectedPlan(state.editBackup);
+    persistPlans();
+    state.screen = "home";
+    render();
+  }
   if (action === "save-plan") {
     capturePlanForm();
     state.plan.exercises.forEach(item => {
@@ -358,10 +462,19 @@ document.addEventListener("click", event => {
       item.sets = clamp(Number(item.sets) || 1, 1, 20);
       item.rest = clamp(Number(item.rest) || 60, 10, 900);
     });
-    save(STORAGE.plan, state.plan);
+    persistPlans();
     state.screen = "home";
     render();
     toast("训练计划已保存");
+  }
+  if (action === "delete-plan") {
+    if (state.plans.length <= 1) return toast("至少保留一个训练计划");
+    if (!window.confirm(`确定删除“${state.plan.name}”吗？`)) return;
+    state.plans = state.plans.filter(item => item.id !== state.selectedPlanId);
+    setSelectedPlan(state.plans[0]);
+    state.screen = "home";
+    render();
+    toast("训练计划已删除");
   }
   if (action === "add-exercise") {
     capturePlanForm();
@@ -393,7 +506,7 @@ document.addEventListener("click", event => {
     render();
   }
   if (action === "finish-summary") {
-    state.history.unshift({ date: new Date().toISOString(), plan: state.plan.name, sets: state.workout?.completedSets || 0 });
+    state.history.unshift({ date: new Date().toISOString(), plan: state.workout?.planName || state.plan.name, sets: state.workout?.completedSets || 0 });
     state.history = state.history.slice(0, 30);
     save(STORAGE.history, state.history);
     state.workout = null;
