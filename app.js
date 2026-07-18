@@ -275,13 +275,11 @@ function renderRest() {
       <div class="ranger-stage ${preparing ? "ready" : ""} ${over ? "hurry" : ""}" aria-hidden="true">
         <div class="ranger-sprite"></div>
         <div class="ranger-campfire"></div>
-        <span class="ranger-spark ranger-spark-one"></span>
-        <span class="ranger-spark ranger-spark-two"></span>
       </div>
       <p class="next-copy">下一组：<strong>${escapeHtml(next)}</strong></p>
       <div class="inline-actions">
         <button class="secondary" data-action="add-rest">＋30 秒</button>
-        <button class="primary" data-action="start-next">进入下一波</button>
+        <button class="primary" data-action="start-next">${over ? "返回训练 · 开始下一组" : "进入下一波"}</button>
       </div>
     </section>
   </main>`;
@@ -375,6 +373,8 @@ function startTicker() {
       note.textContent = "营火熄灭，继续冒险！";
       ring.classList.add("over");
       document.querySelector(".ranger-stage")?.classList.add("hurry");
+      const nextButton = document.querySelector('[data-action="start-next"]');
+      if (nextButton) nextButton.textContent = "返回训练 · 开始下一组";
       ring.style.setProperty("--progress", "100%");
     } else {
       value.textContent = formatTime(remaining);
@@ -522,7 +522,7 @@ document.addEventListener("visibilitychange", () => {
 });
 
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("service-worker.js?v=9").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("service-worker.js?v=11").catch(() => {}));
 }
 
 if (state.workout && state.workout.status !== "complete") {

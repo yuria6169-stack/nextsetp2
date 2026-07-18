@@ -724,11 +724,11 @@ h2 { font-size: 19px; letter-spacing: -.025em; text-shadow: 2px 2px 0 #17242c; }
 .ranger-sprite {
   position: absolute;
   z-index: 3;
-  left: 28px;
+  left: 18px;
   bottom: 11px;
   width: 128px;
   height: 145px;
-  background-image: url("ranger-rest-sprite.png?v=9");
+  background-image: url("ranger-rest-sprite.png?v=11");
   background-repeat: no-repeat;
   background-size: 400% 100%;
   background-position: 0 0;
@@ -740,41 +740,32 @@ h2 { font-size: 19px; letter-spacing: -.025em; text-shadow: 2px 2px 0 #17242c; }
   bottom: 6px;
   width: 128px;
   height: 170px;
-  background-image: url("ranger-ready-sprite.png?v=9");
+  background-image: url("ranger-ready-sprite.png?v=11");
   animation: ranger-ready-cycle 2.6s steps(1, end) infinite;
 }
 .ranger-stage.hurry .ranger-sprite {
-  background-image: url("ranger-ready-sprite.png?v=9");
+  background-image: url("ranger-ready-sprite.png?v=11");
   background-position: 100% 0;
   animation: ranger-alert-bounce .58s steps(2, end) infinite;
 }
 .ranger-campfire {
   position: absolute;
   z-index: 2;
-  right: 48px;
-  bottom: 18px;
-  width: 29px;
-  height: 37px;
-  clip-path: polygon(50% 0, 72% 24%, 100% 54%, 84% 100%, 16% 100%, 0 54%, 27% 25%);
-  background: #ffe05f;
-  box-shadow: inset 0 -14px #f06f5f;
-  filter: drop-shadow(-9px 13px 0 #78472f) drop-shadow(9px 0 0 #78472f);
+  right: 13px;
+  bottom: 10px;
+  width: 112px;
+  height: 132px;
+  background-image: url("campfire-sprite.png?v=11");
+  background-repeat: no-repeat;
+  background-size: 400% 100%;
+  background-position: 0 0;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 5px 0 rgba(9,18,23,.45));
   transform-origin: 50% 100%;
-  animation: ranger-fire-flicker .72s steps(2, end) infinite;
+  animation: ranger-fire-cycle 1.05s steps(1, end) infinite;
 }
-.ranger-spark {
-  position: absolute;
-  z-index: 3;
-  width: 5px;
-  height: 5px;
-  background: var(--gold);
-  animation: ranger-spark-float 1.15s steps(3, end) infinite;
-}
-.ranger-spark-one { right: 47px; top: 91px; }
-.ranger-spark-two { right: 78px; top: 108px; animation-delay: -.58s; }
-.ranger-stage.ready .ranger-campfire { animation-duration: .52s; }
-.ranger-stage.hurry .ranger-campfire,
-.ranger-stage.hurry .ranger-spark { animation-duration: .3s; }
+.ranger-stage.ready .ranger-campfire { animation-duration: .72s; }
+.ranger-stage.hurry .ranger-campfire { animation-duration: .48s; }
 @keyframes ranger-rest-cycle {
   0%, 28% { background-position: 0 0; }
   29%, 48% { background-position: 33.333% 0; }
@@ -791,14 +782,11 @@ h2 { font-size: 19px; letter-spacing: -.025em; text-shadow: 2px 2px 0 #17242c; }
   0%, 100% { transform: translateY(0) rotate(-1deg); }
   50% { transform: translateY(-7px) rotate(1deg); }
 }
-@keyframes ranger-fire-flicker {
-  0%, 100% { transform: scaleX(1) translateY(0); }
-  50% { transform: scaleX(.76) translateY(3px); }
-}
-@keyframes ranger-spark-float {
-  0% { transform: translateY(14px); opacity: 0; }
-  35% { opacity: 1; }
-  100% { transform: translateY(-19px); opacity: 0; }
+@keyframes ranger-fire-cycle {
+  0%, 24% { background-position: 0 0; }
+  25%, 49% { background-position: 33.333% 0; }
+  50%, 74% { background-position: 66.666% 0; }
+  75%, 100% { background-position: 100% 0; }
 }
 .ranger-stage + .next-copy { margin-top: 5px; }
 .next-copy {
